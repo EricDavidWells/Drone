@@ -8,7 +8,7 @@ Notes:
 
 Jan 29th, 2017:
 
-Markup:	* Changed everything to functions
+Markup :	* Changed everything to functions
 	* Confirmed that wire interferes with servo
 	* Servo with wire is better than servo2 with wire
 	* Confirmed that wire interferes with servo2….
