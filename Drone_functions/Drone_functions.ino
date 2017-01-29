@@ -1,23 +1,68 @@
 #include <Wire.h>
-#include "Drone_variables2.h"
+//#include <Servo.h>
 #include <ServoTimer2.h>
+#include <PID_v1.h>
+#include <PinChangeInt.h>
+#include "Drone_variables2.h"
 
 void setup() {
   Serial.begin(115200);
   Serial.setTimeout(10);
   Wire.begin();
   IMU_setup();
+  ESC1.attach(ESC1pin);
+  ESC2.attach(ESC2pin);
+  ESC3.attach(ESC3pin);
+  ESC4.attach(ESC4pin);
 }
 
 void loop() {
-  IMU_values();
+  delay(10);
+//  IMU_values();
   Serial_read();
+  ESC_write();
   Serial.print(pitch);
   Serial.print('\t');
   Serial.print(roll);
   Serial.print('\t');
-  Serial.println(value);
+  Serial.print(dtime, 8);
+  Serial.print('\t');
+  Serial.println(ESC1_val);
 }
+
+void ESC_write(){
+
+  ESC1_val = value;
+  ESC2_val = value;
+  ESC3_val = value;
+  ESC4_val = value;
+  
+  ESC1_val = constrain(ESC1_val,1000,2000);
+  ESC2_val = constrain(ESC2_val,1000,2000);
+  ESC3_val = constrain(ESC3_val,1000,2000);
+  ESC4_val = constrain(ESC4_val,1000,2000);
+
+  ESC1.write(ESC1_val);
+//  ESC2.write(ESC2_val);
+//  ESC3.write(ESC3_val);
+//  ESC4.write(ESC4_val);
+
+//  ESC1.write(1000);
+  ESC2.write(1000);
+  ESC3.write(1000);
+  ESC4.write(1000);
+
+//  ESC1.writeMicroseconds(ESC1_val);
+////  ESC2.writeMicroseconds(ESC2_val);
+////  ESC3.writeMicroseconds(ESC3_val);
+////  ESC4.writeMicroseconds(ESC4_val);
+//
+////  ESC1.writeMicroseconds(1000);
+//  ESC2.writeMicroseconds(1000);
+//  ESC3.writeMicroseconds(1000);
+//  ESC4.writeMicroseconds(1000);
+}
+
 void Serial_read(){
       if (Serial.available() > 0) {  
     incomingByte = Serial.readStringUntil(',');     
