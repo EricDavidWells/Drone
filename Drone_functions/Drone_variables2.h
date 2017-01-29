@@ -145,3 +145,11 @@ float comp_y2;
 float comp_z2;
 float Bfy;
 float Bfx;
+////////////////////////////////Serial read stuff///////////////////////////
+////////////////////////////////////////////////////////////////////////////
+String command;
+String svalue;
+float value = 1000;
+int spacelocation;
+String incomingByte;
+int value2 = 0;

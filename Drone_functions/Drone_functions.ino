@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include "Drone_variables2.h"
+#include <ServoTimer2.h>
 
 void setup() {
   Serial.begin(115200);
@@ -10,9 +11,23 @@ void setup() {
 
 void loop() {
   IMU_values();
+  Serial_read();
   Serial.print(pitch);
   Serial.print('\t');
-  Serial.println(roll);
+  Serial.print(roll);
+  Serial.print('\t');
+  Serial.println(value);
+}
+void Serial_read(){
+      if (Serial.available() > 0) {  
+    incomingByte = Serial.readStringUntil(',');     
+    spacelocation = incomingByte.indexOf(' ');
+    command = incomingByte.substring(0,spacelocation);
+    value = incomingByte.substring(spacelocation+1).toFloat();
+    if ((value>2000 || value<1000) && command != "p"){
+      value = 1000;
+    }
+  }
 }
 
 void IMU_values(){
