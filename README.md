@@ -13,6 +13,7 @@ My attempt at an Arduino powered drone w/ own flight controller
 * Servo with wire is better than servo2 with wire
 * Confirmed that wire interferes with servo2….
 * http://playground.arduino.cc/Main/SoftwareI2CLibrary  This can communicate with i2c four times faster, that might make a difference
-* found code that shed some light: http://www.brokking.net/ymfc-al_main.html
+* Found code that shed some light: http://www.brokking.net/ymfc-al_main.html
  * hardcode servo routine so that it only runs when the i2c isn't running
+* IMU_values() takes 10ms to run...... don't know why it is so long
 	
