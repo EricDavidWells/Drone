@@ -21,10 +21,9 @@ void setup() {
 }
 
 void loop() {
-//  delay(10);
+
   IMU_values();
   Serial_read();
-//  ESC_write();
   ESC_write2();
   Serial.print(pitch);
   Serial.print('\t');
@@ -56,40 +55,6 @@ void ESC_write2(){
     if(timer_ch3 <= esc_timer)PORTB &= B11110111;                //Set digital output 6 to low if the time is expired.
     if(timer_ch4 <= esc_timer)PORTD &= B11011111; 
   }
-}
-
-void ESC_write(){
-
-  ESC1_val = value;
-  ESC2_val = value;
-  ESC3_val = value;
-  ESC4_val = value;
-  
-  ESC1_val = constrain(ESC1_val,1000,2000);
-  ESC2_val = constrain(ESC2_val,1000,2000);
-  ESC3_val = constrain(ESC3_val,1000,2000);
-  ESC4_val = constrain(ESC4_val,1000,2000);
-
-  ESC1.write(ESC1_val);
-//  ESC2.write(ESC2_val);
-//  ESC3.write(ESC3_val);
-//  ESC4.write(ESC4_val);
-
-//  ESC1.write(1000);
-  ESC2.write(1000);
-  ESC3.write(1000);
-  ESC4.write(1000);
-
-//  ESC1.writeMicroseconds(ESC1_val);
-////  ESC2.writeMicroseconds(ESC2_val);
-////  ESC3.writeMicroseconds(ESC3_val);
-////  ESC4.writeMicroseconds(ESC4_val);
-//
-////  ESC1.writeMicroseconds(1000);
-//  ESC2.writeMicroseconds(1000);
-//  ESC3.writeMicroseconds(1000);
-//  ESC4.writeMicroseconds(1000);
-
 }
 
 void Serial_read(){
