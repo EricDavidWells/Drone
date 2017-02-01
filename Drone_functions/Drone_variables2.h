@@ -186,3 +186,20 @@ int timer_ch1;
 int timer_ch2;
 int timer_ch3;
 int timer_ch4;
+
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+////Receiver variables//////////////////////////////
+
+int ch1 = 6;
+int ch2 = 7;
+int ch3 = 8;
+int ch4 = 9;
+int pins[] = {6,7,8,9};
+int pinlength = 4;
+int rec[4];
+int i = 0;
+volatile int pwm_value[4];
+volatile int prev_time = 0;
+uint8_t latest_interrupted_pin;
+volatile int rec_speed[4];

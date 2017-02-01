@@ -13,30 +13,74 @@ void setup() {
   pinMode(ESC2pin, OUTPUT);
   pinMode(ESC3pin, OUTPUT);
   pinMode(ESC4pin, OUTPUT);
+//  pinMode(ch1, INPUT); digitalWrite(ch1, HIGH);
+//  pinMode(ch2, INPUT); digitalWrite(ch2, HIGH);
+//  pinMode(ch3, INPUT); digitalWrite(ch3, HIGH);
+//  pinMode(ch4, INPUT); digitalWrite(ch4, HIGH);
+
+  pinMode(ch1, INPUT); 
+  pinMode(ch2, INPUT); 
+  pinMode(ch3, INPUT); 
+  pinMode(ch4, INPUT);
+
+  PCintPort::attachInterrupt(ch1, &rising, RISING);
 }
+
+int check;
 
 void loop() {
 
   IMU_values();
   Serial_read();
-  ESC_write2();
+  check = micros();
+  ESC_write();
+  check = micros() - check;
+  
+  Serial.print(" pitch:  ");
   Serial.print(pitch);
-  Serial.print('\t');
+  Serial.print(" roll: ");
   Serial.print(roll);
-  Serial.print('\t');
+  Serial.print(" time change: ");
   Serial.print(dtime, 8);
+  Serial.print(" value: ");
+  Serial.print(value);
+  Serial.print(" ch1: ");
+  Serial.print(pwm_value[0]);
+  Serial.print(" ch2: ");
+  Serial.print(pwm_value[1]);
+  Serial.print(" ch3: ");
+  Serial.print(pwm_value[2]);
+  Serial.print(" ch4: ");
+  Serial.print(pwm_value[3]);
   Serial.print('\t');
-  Serial.println(value);
+  Serial.println(check);
 
 }
 
-void ESC_write2(){
+void rising(){
+  latest_interrupted_pin=PCintPort::arduinoPin;
+  PCintPort::detachInterrupt(latest_interrupted_pin);
+  PCintPort::attachInterrupt(latest_interrupted_pin, &falling, FALLING);
+  prev_time = micros();
+}
+ 
+void falling(){
+  latest_interrupted_pin=PCintPort::arduinoPin;
+  PCintPort::detachInterrupt(latest_interrupted_pin);
+  rec_speed[i] = pwm_value[i]-(micros()-prev_time);
+  pwm_value[i] = micros()-prev_time;
+  i = i+1;
+  i = i % pinlength;
+  PCintPort::attachInterrupt(pins[i], &rising, RISING);
+}
+
+void ESC_write(){
   
   loop_timer = micros();    //start timer
 //  PORTB |= B00001100;        //turn on pins 10 and 11
 //  PORTD |= B00101000;        //turn on pins 3 and 5
 
-  PORTB |= B00001000;
+  PORTB |= B00001000;       //turns on just pin 11
   
   timer_ch1 = loop_timer + value;   //say at what time the channel needs to shut off
   timer_ch2 = loop_timer + value;
