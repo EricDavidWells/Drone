@@ -1,5 +1,4 @@
 #include <Wire.h>
-//#include <Servo.h>
 #include <ServoTimer2.h>
 #include <PID_v1.h>
 #include <PinChangeInt.h>
@@ -14,10 +13,6 @@ void setup() {
   pinMode(ESC2pin, OUTPUT);
   pinMode(ESC3pin, OUTPUT);
   pinMode(ESC4pin, OUTPUT);
-//  ESC1.attach(ESC1pin);
-//  ESC2.attach(ESC2pin);
-//  ESC3.attach(ESC3pin);
-//  ESC4.attach(ESC4pin);
 }
 
 void loop() {
@@ -557,20 +552,5 @@ void IMU_setup(){
   while (Wire.available() == 0);
   int MDB = Wire.read();
   MD = MDA*256+MDB;  
-}
-
-void ricoprint(String Rico1, String Rico2, String Rico3, String Rico4, String Rico5, String Rico6){
-  Serial.print(Rico1);
-  Serial.print('\t');
-  Serial.print(Rico2);
-  Serial.print('\t');
-  Serial.print(Rico3);
-  Serial.print('\t');
-  Serial.print(Rico4);
-  Serial.print('\t');
-  Serial.print(Rico5);
-  Serial.print('\t');
-  Serial.print(Rico6);
-  Serial.print('\n');
 }
 
