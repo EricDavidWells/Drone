@@ -1,5 +1,4 @@
 #include <Wire.h>
-//#include <Servo.h>
 #include <ServoTimer2.h>
 #include <PID_v1.h>
 #include <PinChangeInt.h>
@@ -7,60 +6,50 @@
 
 void setup() {
   Serial.begin(115200);
-  Serial.setTimeout(10);
+  Serial.setTimeout(2);
   Wire.begin();
   IMU_setup();
-  ESC1.attach(ESC1pin);
-  ESC2.attach(ESC2pin);
-  ESC3.attach(ESC3pin);
-  ESC4.attach(ESC4pin);
+  pinMode(ESC1pin, OUTPUT);
+  pinMode(ESC2pin, OUTPUT);
+  pinMode(ESC3pin, OUTPUT);
+  pinMode(ESC4pin, OUTPUT);
 }
 
 void loop() {
-  delay(10);
-//  IMU_values();
+
+  IMU_values();
   Serial_read();
-  ESC_write();
+  ESC_write2();
   Serial.print(pitch);
   Serial.print('\t');
   Serial.print(roll);
   Serial.print('\t');
   Serial.print(dtime, 8);
   Serial.print('\t');
-  Serial.println(ESC1_val);
+  Serial.println(value);
+
 }
 
-void ESC_write(){
-
-  ESC1_val = value;
-  ESC2_val = value;
-  ESC3_val = value;
-  ESC4_val = value;
+void ESC_write2(){
   
-  ESC1_val = constrain(ESC1_val,1000,2000);
-  ESC2_val = constrain(ESC2_val,1000,2000);
-  ESC3_val = constrain(ESC3_val,1000,2000);
-  ESC4_val = constrain(ESC4_val,1000,2000);
+  loop_timer = micros();    //start timer
+//  PORTB |= B00001100;        //turn on pins 10 and 11
+//  PORTD |= B00101000;        //turn on pins 3 and 5
 
-  ESC1.write(ESC1_val);
-//  ESC2.write(ESC2_val);
-//  ESC3.write(ESC3_val);
-//  ESC4.write(ESC4_val);
+  PORTB |= B00001000;
+  
+  timer_ch1 = loop_timer + value;   //say at what time the channel needs to shut off
+  timer_ch2 = loop_timer + value;
+  timer_ch3 = loop_timer + value;
+  timer_ch4 = loop_timer + value;
 
-//  ESC1.write(1000);
-  ESC2.write(1000);
-  ESC3.write(1000);
-  ESC4.write(1000);
-
-//  ESC1.writeMicroseconds(ESC1_val);
-////  ESC2.writeMicroseconds(ESC2_val);
-////  ESC3.writeMicroseconds(ESC3_val);
-////  ESC4.writeMicroseconds(ESC4_val);
-//
-////  ESC1.writeMicroseconds(1000);
-//  ESC2.writeMicroseconds(1000);
-//  ESC3.writeMicroseconds(1000);
-//  ESC4.writeMicroseconds(1000);
+  while(PORTB >= 4 || PORTD >= 8){
+    esc_timer = micros();
+    if(timer_ch1 <= esc_timer)PORTB &= B11111011;                //Set digital output 4 to low if the time is expired.
+    if(timer_ch2 <= esc_timer)PORTD &= B11110111;                //Set digital output 5 to low if the time is expired.
+    if(timer_ch3 <= esc_timer)PORTB &= B11110111;                //Set digital output 6 to low if the time is expired.
+    if(timer_ch4 <= esc_timer)PORTD &= B11011111; 
+  }
 }
 
 void Serial_read(){
@@ -563,20 +552,5 @@ void IMU_setup(){
   while (Wire.available() == 0);
   int MDB = Wire.read();
   MD = MDA*256+MDB;  
-}
-
-void ricoprint(String Rico1, String Rico2, String Rico3, String Rico4, String Rico5, String Rico6){
-  Serial.print(Rico1);
-  Serial.print('\t');
-  Serial.print(Rico2);
-  Serial.print('\t');
-  Serial.print(Rico3);
-  Serial.print('\t');
-  Serial.print(Rico4);
-  Serial.print('\t');
-  Serial.print(Rico5);
-  Serial.print('\t');
-  Serial.print(Rico6);
-  Serial.print('\n');
 }
 
