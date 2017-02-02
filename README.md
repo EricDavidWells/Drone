@@ -16,4 +16,11 @@ My attempt at an Arduino powered drone w/ own flight controller
 * Found code that shed some light: http://www.brokking.net/ymfc-al_main.html
  * hardcode servo routine so that it only runs when the i2c isn't running
 * IMU_values() takes 10ms to run...... don't know why it is so long
+
+###Feb 1, 2017:###
+
+* Hardcoded servo routine works perfectly even with the Wire.h library
+* Receiver interrupt routine still messes with it, also not writing the pins to HIGH might be making the values not accurate, can't tell but they seem pretty messed up right now
+ * Keep in mind that this changes the ESC while loop whenever I adjust the pins HIGH or LOW
+* I busted off one of the battery leads so I need to solder that back on now 
 	

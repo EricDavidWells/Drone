@@ -32,18 +32,18 @@ void loop() {
 
   IMU_values();
   Serial_read();
-  check = micros();
-  ESC_write();
-  check = micros() - check;
+//  check = micros();
+//  ESC_write();
+//  check = micros() - check;
   
-  Serial.print(" pitch:  ");
-  Serial.print(pitch);
-  Serial.print(" roll: ");
-  Serial.print(roll);
-  Serial.print(" time change: ");
-  Serial.print(dtime, 8);
-  Serial.print(" value: ");
-  Serial.print(value);
+//  Serial.print(" pitch:  ");
+//  Serial.print(pitch);
+//  Serial.print(" roll: ");
+//  Serial.print(roll);
+//  Serial.print(" time change: ");
+//  Serial.print(dtime, 8);
+//  Serial.print(" value: ");
+//  Serial.print(value);
   Serial.print(" ch1: ");
   Serial.print(pwm_value[0]);
   Serial.print(" ch2: ");
@@ -53,20 +53,34 @@ void loop() {
   Serial.print(" ch4: ");
   Serial.print(pwm_value[3]);
   Serial.print('\t');
-  Serial.println(check);
+  Serial.println();
 
 }
 
 void rising(){
+//  latest_interrupted_pin=PCintPort::arduinoPin;
+//  PCintPort::detachInterrupt(latest_interrupted_pin);
+//  PCintPort::attachInterrupt(latest_interrupted_pin, &falling, FALLING);
+//  prev_time = micros();
+
   latest_interrupted_pin=PCintPort::arduinoPin;
-  PCintPort::detachInterrupt(latest_interrupted_pin);
-  PCintPort::attachInterrupt(latest_interrupted_pin, &falling, FALLING);
+  PCintPort::detachInterrupt(pins[i]);
+  PCintPort::attachInterrupt(pins[i], &falling, FALLING);
   prev_time = micros();
+
 }
  
 void falling(){
+//  latest_interrupted_pin=PCintPort::arduinoPin;
+//  PCintPort::detachInterrupt(latest_interrupted_pin);
+//  rec_speed[i] = pwm_value[i]-(micros()-prev_time);
+//  pwm_value[i] = micros()-prev_time;
+//  i = i+1;
+//  i = i % pinlength;
+//  PCintPort::attachInterrupt(pins[i], &rising, RISING);
+
   latest_interrupted_pin=PCintPort::arduinoPin;
-  PCintPort::detachInterrupt(latest_interrupted_pin);
+  PCintPort::detachInterrupt(pins[i]);
   rec_speed[i] = pwm_value[i]-(micros()-prev_time);
   pwm_value[i] = micros()-prev_time;
   i = i+1;
@@ -77,10 +91,10 @@ void falling(){
 void ESC_write(){
   
   loop_timer = micros();    //start timer
-//  PORTB |= B00001100;        //turn on pins 10 and 11
-//  PORTD |= B00101000;        //turn on pins 3 and 5
+  PORTB |= B00001100;        //turn on pins 10 and 11
+  PORTD |= B00101000;        //turn on pins 3 and 5
 
-  PORTB |= B00001000;       //turns on just pin 11
+//  PORTB |= B00001000;       //turns on just pin 11
   
   timer_ch1 = loop_timer + value;   //say at what time the channel needs to shut off
   timer_ch2 = loop_timer + value;
@@ -90,9 +104,13 @@ void ESC_write(){
   while(PORTB >= 4 || PORTD >= 8){
     esc_timer = micros();
     if(timer_ch1 <= esc_timer)PORTB &= B11111011;                //Set digital output 4 to low if the time is expired.
-    if(timer_ch2 <= esc_timer)PORTD &= B11110111;                //Set digital output 5 to low if the time is expired.
-    if(timer_ch3 <= esc_timer)PORTB &= B11110111;                //Set digital output 6 to low if the time is expired.
-    if(timer_ch4 <= esc_timer)PORTD &= B11011111; 
+//    if(timer_ch2 <= esc_timer)PORTD &= B11110111;                //Set digital output 5 to low if the time is expired.
+//    if(timer_ch3 <= esc_timer)PORTB &= B11110111;                //Set digital output 6 to low if the time is expired.
+//    if(timer_ch4 <= esc_timer)PORTD &= B11011111; 
+
+    if((loop_timer + 1000) <= esc_timer)PORTD &= B11110111;               //for only writing to one motor 
+    if((loop_timer + 1000) <= esc_timer)PORTB &= B11110111;                
+    if((loop_timer + 1000) <= esc_timer)PORTD &= B11011111; 
   }
 }
 
