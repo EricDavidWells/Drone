@@ -20,7 +20,11 @@ My attempt at an Arduino powered drone w/ own flight controller
 ###Feb 1, 2017:###
 
 * Hardcoded servo routine works perfectly even with the Wire.h library
-* Receiver interrupt routine still messes with it, also not writing the pins to HIGH might be making the values not accurate, can't tell but they seem pretty messed up right now
- * Keep in mind that this changes the ESC while loop whenever I adjust the pins HIGH or LOW
-* I busted off one of the battery leads so I need to solder that back on now 
+* Receiver interrupt routine still messes with it, also not writing the pins to HIGH in the setup makes the 
+the values not accurate
+ * added numbers to the ESC while loop since the receiver pins being written HIGH affects the PORTB and PORTD bytes
+* I busted off one of the battery leads and soldered it back on
+* Everything appears to be working, the rc values started being like 8000 so i think battery was dead on drone or receiver
+try again tomorrow.  Also need to make sure it doesn't interfere with ESC writing
+
 	

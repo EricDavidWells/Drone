@@ -198,7 +198,7 @@ int ch4 = 9;
 int pins[] = {6,7,8,9};
 int pinlength = 4;
 int rec[4];
-int i = 0;
+volatile byte i = 0;
 volatile int pwm_value[4];
 volatile int prev_time = 0;
 uint8_t latest_interrupted_pin;

@@ -13,15 +13,15 @@ void setup() {
   pinMode(ESC2pin, OUTPUT);
   pinMode(ESC3pin, OUTPUT);
   pinMode(ESC4pin, OUTPUT);
-//  pinMode(ch1, INPUT); digitalWrite(ch1, HIGH);
-//  pinMode(ch2, INPUT); digitalWrite(ch2, HIGH);
-//  pinMode(ch3, INPUT); digitalWrite(ch3, HIGH);
-//  pinMode(ch4, INPUT); digitalWrite(ch4, HIGH);
+  pinMode(ch1, INPUT); digitalWrite(ch1, HIGH);
+  pinMode(ch2, INPUT); digitalWrite(ch2, HIGH);
+  pinMode(ch3, INPUT); digitalWrite(ch3, HIGH);
+  pinMode(ch4, INPUT); digitalWrite(ch4, HIGH);
 
-  pinMode(ch1, INPUT); 
-  pinMode(ch2, INPUT); 
-  pinMode(ch3, INPUT); 
-  pinMode(ch4, INPUT);
+//  pinMode(ch1, INPUT); 
+//  pinMode(ch2, INPUT); 
+//  pinMode(ch3, INPUT); 
+//  pinMode(ch4, INPUT);
 
   PCintPort::attachInterrupt(ch1, &rising, RISING);
 }
@@ -29,11 +29,13 @@ void setup() {
 int check;
 
 void loop() {
-
+  delay(10);
   IMU_values();
   Serial_read();
 //  check = micros();
-//  ESC_write();
+  PCintPort::detachInterrupt(pins[i]);
+  ESC_write();
+  PCintPort::attachInterrupt(pins[i], &rising, RISING);
 //  check = micros() - check;
   
 //  Serial.print(" pitch:  ");
@@ -79,16 +81,18 @@ void falling(){
 //  i = i % pinlength;
 //  PCintPort::attachInterrupt(pins[i], &rising, RISING);
 
-  latest_interrupted_pin=PCintPort::arduinoPin;
-  PCintPort::detachInterrupt(pins[i]);
+//  latest_interrupted_pin=PCintPort::arduinoPin;
+  
   rec_speed[i] = pwm_value[i]-(micros()-prev_time);
   pwm_value[i] = micros()-prev_time;
+  PCintPort::detachInterrupt(pins[i]);
   i = i+1;
   i = i % pinlength;
   PCintPort::attachInterrupt(pins[i], &rising, RISING);
 }
 
 void ESC_write(){
+  
   
   loop_timer = micros();    //start timer
   PORTB |= B00001100;        //turn on pins 10 and 11
@@ -101,7 +105,7 @@ void ESC_write(){
   timer_ch3 = loop_timer + value;
   timer_ch4 = loop_timer + value;
 
-  while(PORTB >= 4 || PORTD >= 8){
+  while((PORTB - 3) >= 4 || (PORTD-192) >= 8){
     esc_timer = micros();
     if(timer_ch1 <= esc_timer)PORTB &= B11111011;                //Set digital output 4 to low if the time is expired.
 //    if(timer_ch2 <= esc_timer)PORTD &= B11110111;                //Set digital output 5 to low if the time is expired.
@@ -112,6 +116,7 @@ void ESC_write(){
     if((loop_timer + 1000) <= esc_timer)PORTB &= B11110111;                
     if((loop_timer + 1000) <= esc_timer)PORTD &= B11011111; 
   }
+  
 }
 
 void Serial_read(){
