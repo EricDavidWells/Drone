@@ -26,17 +26,19 @@ void setup() {
   PCintPort::attachInterrupt(ch1, &rising, RISING);
 }
 
-int check;
+long check;
 
 void loop() {
   delay(10);
   IMU_values();
   Serial_read();
-//  check = micros();
+  
   PCintPort::detachInterrupt(pins[i]);
+//  check = micros();
   ESC_write();
-  PCintPort::attachInterrupt(pins[i], &rising, RISING);
 //  check = micros() - check;
+  PCintPort::attachInterrupt(pins[i], &rising, RISING);
+ 
   
 //  Serial.print(" pitch:  ");
 //  Serial.print(pitch);
@@ -55,7 +57,7 @@ void loop() {
   Serial.print(" ch4: ");
   Serial.print(pwm_value[3]);
   Serial.print('\t');
-  Serial.println();
+  Serial.println(check);
 
 }
 
@@ -93,21 +95,26 @@ void falling(){
 
 void ESC_write(){
   
+  check = micros();
   
-  loop_timer = micros();    //start timer
+  
   PORTB |= B00001100;        //turn on pins 10 and 11
   PORTD |= B00101000;        //turn on pins 3 and 5
-
+  loop_timer = micros();     //start timer
 //  PORTB |= B00001000;       //turns on just pin 11
-  
+
   timer_ch1 = loop_timer + value;   //say at what time the channel needs to shut off
   timer_ch2 = loop_timer + value;
   timer_ch3 = loop_timer + value;
   timer_ch4 = loop_timer + value;
 
+//  byte a = PORTB & B00001100;
+//  byte b = PORTD & B00101000;
+
   while((PORTB - 3) >= 4 || (PORTD-192) >= 8){
     esc_timer = micros();
-    if(timer_ch1 <= esc_timer)PORTB &= B11111011;                //Set digital output 4 to low if the time is expired.
+
+    if(timer_ch1 <= esc_timer){PORTB &= B11111011;}                //Set digital output 4 to low if the time is expired.
 //    if(timer_ch2 <= esc_timer)PORTD &= B11110111;                //Set digital output 5 to low if the time is expired.
 //    if(timer_ch3 <= esc_timer)PORTB &= B11110111;                //Set digital output 6 to low if the time is expired.
 //    if(timer_ch4 <= esc_timer)PORTD &= B11011111; 
@@ -115,8 +122,11 @@ void ESC_write(){
     if((loop_timer + 1000) <= esc_timer)PORTD &= B11110111;               //for only writing to one motor 
     if((loop_timer + 1000) <= esc_timer)PORTB &= B11110111;                
     if((loop_timer + 1000) <= esc_timer)PORTD &= B11011111; 
+//    Serial.print(esc_timer - timer_ch1);
+//    Serial.print(' ');
+//    Serial.println(PORTB);
   }
-  
+  check = micros() - check;
 }
 
 void Serial_read(){
