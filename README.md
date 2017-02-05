@@ -8,8 +8,7 @@ My attempt at an Arduino powered drone w/ own flight controller
 
 ###Feb 2, 2017:###
 
-* Found out that the data type for the loop timers was int and thus was getting reset at 32768 and giving a false statement 
-and ending the ESC while loop too early, changed to long data type and fixed problem
+* Found out that the data type for the loop timers was int and thus was getting reset at 32768 and giving a false statement and ending the ESC while loop too early, changed to long data type and fixed problem
 * Using micros() to check the time between ESC pulses revealed that it is constant, there is slight variation in the motor
 sound but the ESC pulses are constant, only thing left to check is the soldered connections since they probably suck.
 * Next is balancing props/motors
