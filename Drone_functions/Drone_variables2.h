@@ -182,14 +182,14 @@ float ESC4_val;
 ////////////////////////////////////////////////////////////////////////////
 long loop_timer;
 long esc_timer;
-long timer_ch1;
-long timer_ch2;
-long timer_ch3;
-long timer_ch4;
+long timer_ESC1;
+long timer_ESC2;
+long timer_ESC3;
+long timer_ESC4;
 
 ////////////////////////////////////////////////////
-////////////////////////////////////////////////////
 ////Receiver variables//////////////////////////////
+////////////////////////////////////////////////////
 
 int ch1 = 6;
 int ch2 = 7;
@@ -197,9 +197,23 @@ int ch3 = 8;
 int ch4 = 9;
 int pins[] = {6,7,8,9};
 int pinlength = 4;
-int rec[4];
+int rec[4] = {0, 0, 0, 0};
 volatile byte i = 0;
 volatile int pwm_value[4];
 volatile int prev_time = 0;
 uint8_t latest_interrupted_pin;
 volatile int rec_speed[4];
+
+long cal_timerstart;
+long cal_timer;
+long r = 0;
+long rec_cal[4] = {0, 0, 0, 0};
+int rec_cal2[4] = {0, 0, 0, 0};
+int pwm_corr[4];
+
+////////////////////////////////////////////////////
+///////////////////General Stuff////////////////////
+////////////////////////////////////////////////////
+
+int resetcount = 0;
+long check;

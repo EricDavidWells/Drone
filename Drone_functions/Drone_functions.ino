@@ -18,44 +18,37 @@ void setup() {
   pinMode(ch3, INPUT); digitalWrite(ch3, HIGH);
   pinMode(ch4, INPUT); digitalWrite(ch4, HIGH);
 
-//  pinMode(ch1, INPUT); 
-//  pinMode(ch2, INPUT); 
-//  pinMode(ch3, INPUT); 
-//  pinMode(ch4, INPUT);
-
   PCintPort::attachInterrupt(ch1, &rising, RISING);
+  Calibrate();
 }
-
-long check;
 
 void loop() {
   delay(10);
-  IMU_values();
+  
   Serial_read();
+  IMU_values();
+//  ESC_write();
+  ESC_chill();
+  Receiver_filter();
   
-  PCintPort::detachInterrupt(pins[i]);
-//  check = micros();
-  ESC_write();
-//  check = micros() - check;
-  PCintPort::attachInterrupt(pins[i], &rising, RISING);
- 
+  Reset_detect();
   
-//  Serial.print(" pitch:  ");
-//  Serial.print(pitch);
-//  Serial.print(" roll: ");
-//  Serial.print(roll);
-//  Serial.print(" time change: ");
-//  Serial.print(dtime, 8);
-//  Serial.print(" value: ");
-//  Serial.print(value);
+  Serial.print(" pitch:  ");
+  Serial.print(pitch);
+  Serial.print(" roll: ");
+  Serial.print(roll);
+  Serial.print(" time change: ");
+  Serial.print(dtime, 8);
+  Serial.print(" value: ");
+  Serial.print(value);
   Serial.print(" ch1: ");
-  Serial.print(pwm_value[0]);
+  Serial.print(pwm_corr[0]);
   Serial.print(" ch2: ");
-  Serial.print(pwm_value[1]);
+  Serial.print(pwm_corr[1]);
   Serial.print(" ch3: ");
-  Serial.print(pwm_value[2]);
+  Serial.print(pwm_corr[2]);
   Serial.print(" ch4: ");
-  Serial.print(pwm_value[3]);
+  Serial.print(pwm_corr[3]);
   Serial.print('\t');
   Serial.println(check);
 
@@ -94,39 +87,40 @@ void falling(){
 }
 
 void ESC_write(){
-  
-  check = micros();
-  
+
+  PCintPort::detachInterrupt(pins[i]);
   
   PORTB |= B00001100;        //turn on pins 10 and 11
   PORTD |= B00101000;        //turn on pins 3 and 5
   loop_timer = micros();     //start timer
-//  PORTB |= B00001000;       //turns on just pin 11
 
-  timer_ch1 = loop_timer + value;   //say at what time the channel needs to shut off
-  timer_ch2 = loop_timer + value;
-  timer_ch3 = loop_timer + value;
-  timer_ch4 = loop_timer + value;
+//  timer_ESC1 = loop_timer + value;   //say at what time the channel needs to shut off
+//  timer_ESC2 = loop_timer + value;
+//  timer_ESC3 = loop_timer + value;
+//  timer_ESC4 = loop_timer + value;
 
-//  byte a = PORTB & B00001100;
-//  byte b = PORTD & B00101000;
+  timer_ESC1 = loop_timer + pwm_value[2];   //say at what time the channel needs to shut off
+  timer_ESC2 = loop_timer + pwm_value[2];
+  timer_ESC3 = loop_timer + pwm_value[2];
+  timer_ESC4 = loop_timer + pwm_value[2];
+
+  Receiver_filter();
 
   while((PORTB - 3) >= 4 || (PORTD-192) >= 8){
     esc_timer = micros();
 
-    if(timer_ch1 <= esc_timer){PORTB &= B11111011;}                //Set digital output 4 to low if the time is expired.
-//    if(timer_ch2 <= esc_timer)PORTD &= B11110111;                //Set digital output 5 to low if the time is expired.
-//    if(timer_ch3 <= esc_timer)PORTB &= B11110111;                //Set digital output 6 to low if the time is expired.
-//    if(timer_ch4 <= esc_timer)PORTD &= B11011111; 
+    if(timer_ESC1 <= esc_timer){PORTB &= B11111011;}                //Set digital output 10 to low if the time is expired.
+    if(timer_ESC2 <= esc_timer)PORTD &= B11110111;                //Set digital output 11 to low if the time is expired.
+    if(timer_ESC3 <= esc_timer)PORTB &= B11110111;                //Set digital output 3 to low if the time is expired.
+    if(timer_ESC4 <= esc_timer)PORTD &= B11011111;                //Set digital output 5 to low if the time is expired
 
-    if((loop_timer + 1000) <= esc_timer)PORTD &= B11110111;               //for only writing to one motor 
-    if((loop_timer + 1000) <= esc_timer)PORTB &= B11110111;                
-    if((loop_timer + 1000) <= esc_timer)PORTD &= B11011111; 
-//    Serial.print(esc_timer - timer_ch1);
-//    Serial.print(' ');
-//    Serial.println(PORTB);
+//    if((loop_timer + 1000) <= esc_timer)PORTD &= B11110111;               //for only writing to one motor 
+//    if((loop_timer + 1000) <= esc_timer)PORTB &= B11110111;                
+//    if((loop_timer + 1000) <= esc_timer)PORTD &= B11011111; 
+
   }
-  check = micros() - check;
+
+  PCintPort::attachInterrupt(pins[i], &rising, RISING);
 }
 
 void Serial_read(){
@@ -368,6 +362,20 @@ void IMU_values(){
   roll = Ax*180.0000/PI;
   pitch = -Ay*180.0000/PI;
   }
+
+void Reset_detect(){
+if ( pitch > 500 || pitch < -500 || roll > 500 || roll < -500 ){
+  Serial.println("error");
+  resetcount += 1;
+}
+else{
+  resetcount = 0;
+}
+
+if (resetcount >= 5){
+  IMU_setup();
+}
+}
   
 void IMU_setup(){
   
@@ -629,5 +637,70 @@ void IMU_setup(){
   while (Wire.available() == 0);
   int MDB = Wire.read();
   MD = MDA*256+MDB;  
+}
+
+void Calibrate(){
+  Serial.println("Calibrating");
+  delay(1000);
+  
+  cal_timerstart = micros();
+  r = 0;
+  long m = 0;
+  
+   while((cal_timer - cal_timerstart) < 3000000){   //record pwm values for 5 seconds
+      for (int j = 0; j<4; j++){
+        rec_cal[j] += pwm_value[j];
+      }     
+    r += 1;         //count how many values are recorded
+    m += 1;
+    cal_timer = micros();
+   if (m % 1000 == 0){
+      PORTB |= B00001100;        //turn on pins 10 and 11
+      PORTD |= B00101000;        //turn on pins 3 and 5
+      delayMicroseconds(1000);
+      PORTB &= B11110011;
+      PORTD &= B11010111;
+      m = 0;
+   } 
+   }
+      for (int j = 0; j<4; j++){
+         rec_cal[j] /= r;
+    } 
+
+}
+
+void Receiver_filter(){
+  //Sends all receiver values to between 1000 and 2000, except limits throttle to 1500 to make more sensitive
+        check = micros();
+        pwm_corr[0] = (pwm_value[0]-(rec_cal[0]-450))*(1000)/(900) + 1000;
+        pwm_corr[0] = constrain(pwm_corr[0],1000,2000);
+        pwm_corr[1] = (pwm_value[1]-(rec_cal[1]-450))*(1000)/(900) + 1000;
+        pwm_corr[1] = constrain(pwm_corr[1],1000,2000);
+        pwm_corr[2] = (pwm_value[2]-rec_cal[2])*(400)/(900) + 1000;
+        pwm_corr[2] = constrain(pwm_corr[2],1000,1500);
+        pwm_corr[3] = (pwm_value[3]-(rec_cal[3]-450))*(1000)/(900) + 1000;
+        pwm_corr[3] = constrain(pwm_corr[3],1000,2000);
+        check -= micros();
+}
+
+void ESC_chill(){
+
+  PORTB |= B00001100;        //turn on pins 10 and 11
+  PORTD |= B00101000;        //turn on pins 3 and 5
+  loop_timer = micros();     //start timer
+
+  timer_ESC1 = loop_timer + 1000;   //say at what time the channel needs to shut off
+  timer_ESC2 = loop_timer + 1000;
+  timer_ESC3 = loop_timer + 1000;
+  timer_ESC4 = loop_timer + 1000;
+
+  while((PORTB - 3) >= 4 || (PORTD-192) >= 8){
+    esc_timer = micros();
+
+    if(timer_ESC1 <= esc_timer)PORTB &= B11111011;                //Set digital output 10 to low if the time is expired.
+    if(timer_ESC2 <= esc_timer)PORTD &= B11110111;                //Set digital output 11 to low if the time is expired.
+    if(timer_ESC3 <= esc_timer)PORTB &= B11110111;                //Set digital output 3 to low if the time is expired.
+    if(timer_ESC4 <= esc_timer)PORTD &= B11011111;                //Set digital output 5 to low if the time is expired
+  }
 }
 
