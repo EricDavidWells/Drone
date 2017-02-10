@@ -8,9 +8,13 @@ My attempt at an Arduino powered drone w/ own flight controller
 
 ###TODO:###
 
-* Would be good to map the receiver inputs so that it is less sensitive for the first half and more sensitive 
+* Get rid of some vibration, even without propellors the receiver is loose and vibrates audibly at full speed
 * Make gyro offset in calibration function
 
+###Feb 10, 2017:###
+
+* Struggled with motor damping cause I was tired.  Made a super sloppy script called Drone_damping.  Feels
+bad to even look at but works.  Gotta test with ESCS though.
 
 ###Feb 8, 2017:###
 

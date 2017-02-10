@@ -4,6 +4,17 @@
 #include <PinChangeInt.h>
 #include "Drone_variables2.h"
 
+float datapoints;
+int dataflag = 0;
+float datacalx = 0;
+float datacaly = 0;
+float datacalz = 0;
+float datax = 0;
+float datay = 0;
+float dataz = 0;
+int datacount = 0;
+int datatestflag = 0;
+
 void setup() {
   Serial.begin(115200);
   Serial.setTimeout(2);
@@ -13,113 +24,60 @@ void setup() {
   pinMode(ESC2pin, OUTPUT);
   pinMode(ESC3pin, OUTPUT);
   pinMode(ESC4pin, OUTPUT);
-  pinMode(ch1, INPUT); digitalWrite(ch1, HIGH);
-  pinMode(ch2, INPUT); digitalWrite(ch2, HIGH);
-  pinMode(ch3, INPUT); digitalWrite(ch3, HIGH);
-  pinMode(ch4, INPUT); digitalWrite(ch4, HIGH);
-
-  PCintPort::attachInterrupt(ch1, &rising, RISING);
-  Calibrate();
 }
 
 void loop() {
   delay(10); 
   Serial_read();
   IMU_values();
-//  ESC_write();
   ESC_chill();
-//  Receiver_filter();              //this is called within ESC_write function for speed
-  Reset_detect();
-  
-//  Serial.print(" pitch:  ");
-//  Serial.print(pitch);
-//  Serial.print(" roll: ");
-//  Serial.print(roll);
-//  Serial.print(" time change: ");
-//  Serial.print(dtime, 8);
-//  Serial.print(" value: ");
-//  Serial.print(value);
-//  Serial.print(" ch1: ");
-//  Serial.print(pwm_corr[0]);
-//  Serial.print(" ch2: ");
-//  Serial.print(pwm_corr[1]);
-//  Serial.print(" ch3: ");
-//  Serial.print(pwm_corr[2]);
-//  Serial.print(" ch4: ");
-//  Serial.print(pwm_corr[3]);
-//  Serial.print('\t');
-//  Serial.println(accel_valx);
 
-}
-
-void rising(){
-//  latest_interrupted_pin=PCintPort::arduinoPin;
-//  PCintPort::detachInterrupt(latest_interrupted_pin);
-//  PCintPort::attachInterrupt(latest_interrupted_pin, &falling, FALLING);
-//  prev_time = micros();
-
-  latest_interrupted_pin=PCintPort::arduinoPin;
-  PCintPort::detachInterrupt(pins[i]);
-  PCintPort::attachInterrupt(pins[i], &falling, FALLING);
-  prev_time = micros();
-
-}
- 
-void falling(){
-//  latest_interrupted_pin=PCintPort::arduinoPin;
-//  PCintPort::detachInterrupt(latest_interrupted_pin);
-//  rec_speed[i] = pwm_value[i]-(micros()-prev_time);
-//  pwm_value[i] = micros()-prev_time;
-//  i = i+1;
-//  i = i % pinlength;
-//  PCintPort::attachInterrupt(pins[i], &rising, RISING);
-
-//  latest_interrupted_pin=PCintPort::arduinoPin;
-  
-  rec_speed[i] = pwm_value[i]-(micros()-prev_time);
-  pwm_value[i] = micros()-prev_time;
-  PCintPort::detachInterrupt(pins[i]);
-  i = i+1;
-  i = i % pinlength;
-  PCintPort::attachInterrupt(pins[i], &rising, RISING);
-}
-
-void ESC_write(){
-
-  PCintPort::detachInterrupt(pins[i]);
-  
-  PORTB |= B00001100;        //turn on pins 10 and 11
-  PORTD |= B00101000;        //turn on pins 3 and 5
-  loop_timer = micros();     //start timer
-
-//  timer_ESC1 = loop_timer + value;   //say at what time the channel needs to shut off
-//  timer_ESC2 = loop_timer + value;
-//  timer_ESC3 = loop_timer + value;
-//  timer_ESC4 = loop_timer + value;
-
-  timer_ESC1 = loop_timer + pwm_corr[2];   //say at what time the channel needs to shut off
-  timer_ESC2 = loop_timer + pwm_corr[2];
-  timer_ESC3 = loop_timer + pwm_corr[2];
-  timer_ESC4 = loop_timer + pwm_corr[2];
-
-  Receiver_filter();
-
-  while((PORTB - 3) >= 4 || (PORTD-192) >= 8){
-    esc_timer = micros();
-
-    if(timer_ESC1 <= esc_timer){PORTB &= B11111011;}                //Set digital output 10 to low if the time is expired.
-    if(timer_ESC2 <= esc_timer)PORTD &= B11110111;                //Set digital output 11 to low if the time is expired.
-    if(timer_ESC3 <= esc_timer)PORTB &= B11110111;                //Set digital output 3 to low if the time is expired.
-    if(timer_ESC4 <= esc_timer)PORTD &= B11011111;                //Set digital output 5 to low if the time is expired
-
-//    if((loop_timer + 1000) <= esc_timer)PORTD &= B11110111;               //for only writing to one motor 
-//    if((loop_timer + 1000) <= esc_timer)PORTB &= B11110111;                
-//    if((loop_timer + 1000) <= esc_timer)PORTD &= B11011111; 
-
+  if (dataflag == 1){
+    for(int j=0; j<200; j++){
+      datacalx += accel_valx;
+      datacaly += accel_valy;
+      datacalz += accel_valz;
+      IMU_values();
+    }
+    datacalx /= 200;
+    datacaly /= 200;
+    datacalz /= 200;
+    dataflag = 0;
+    Serial.println("calibration done");
   }
+  if (datatestflag == 1){
+    value = 1100;
+    int m = 0;
+    for(int j=0; j<500; j++){ 
+      IMU_values();
+      datax += abs((accel_valx - datacalx));
+      datay += abs((accel_valy - datacaly));
+      dataz += abs((accel_valz - datacalz));
 
-  PCintPort::attachInterrupt(pins[i], &rising, RISING);
+      if (m % 10 == 0){      //if weve done 10 cycles pulse ESC
+      PORTB |= B00001100;        //turn on pins 10 and 11
+      PORTD |= B00101000;        //turn on pins 3 and 5
+      delayMicroseconds(1000);
+      PORTB &= B11111011;
+      PORTD &= B11010111;
+      delayMicroseconds(120);
+      PORTB &= B11110011;
+      m = 0;
+      }
+  }
+  datax /= 500;
+  datay /= 500;
+  dataz /= 500;
+  datatestflag = 0;
+  Serial.println(datax,4);
+  Serial.println(datay,4);
+  Serial.println(dataz,4);
+  datax = 0;
+  datay = 0;
+  dataz = 0;
+  }
 }
+
 
 void Serial_read(){
       if (Serial.available() > 0) {  
@@ -130,6 +88,16 @@ void Serial_read(){
     if ((value>2000 || value<1000)){
       value = 1000;
     }
+    if (command == "cal"){
+      datapoints = value;
+      dataflag = 1;
+      command = "hey 1000";
+    }
+    if (command == "test"){
+      datapoints = value;
+      datatestflag = 1;
+      command = "hey 1000";
+    }    
   }
 }
 
@@ -360,21 +328,6 @@ void IMU_values(){
   roll = Ax*180.0000/PI;
   pitch = -Ay*180.0000/PI;
   }
-
-void Reset_detect(){
-//reset the IMU if a nan error starts happenning
-if ( pitch > 500 || pitch < -500 || roll > 500 || roll < -500 ){
-  Serial.println("error");
-  resetcount += 1;
-}
-else{
-  resetcount = 0;
-}
-
-if (resetcount >= 5){
-  IMU_setup();
-}
-}
   
 void IMU_setup(){
   
@@ -638,36 +591,6 @@ void IMU_setup(){
   MD = MDA*256+MDB;  
 }
 
-void Calibrate(){
-  Serial.println("Calibrating");
-  delay(1000);            //delay to allow receiver to start functioning properly
-  
-  cal_timerstart = micros();      //locate timer starting position for reference
-  long r = 0;                          //initiate random local variable to count
-  long m = 0;                          //initiate random local variable to count modulo style to pulse ESC's every once in a while so they don't freak out while calibrating
-  
-   while((cal_timer - cal_timerstart) < 3000000){   //record pwm values for 5 seconds
-      for (int j = 0; j<4; j++){
-        rec_cal[j] += pwm_value[j];
-      }     
-    r += 1;         //increment how many values are recorded
-    m += 1;         //increment how many cycles since last update
-    cal_timer = micros();   //update timer
-   if (m % 1000 == 0){      //if weve done 1000 cycles pulse ESC
-      PORTB |= B00001100;        //turn on pins 10 and 11
-      PORTD |= B00101000;        //turn on pins 3 and 5
-      delayMicroseconds(1000);
-      PORTB &= B11110011;
-      PORTD &= B11010111;
-      m = 0;
-   } 
-   }
-   
-      for (int j = 0; j<4; j++){    //get average receiver value for each channel
-         rec_cal[j] /= r;
-    } 
-}
-
 void Receiver_filter(){
         //Sends all receiver values to between 1000 and 2000, except limits throttle to 1500 to make more sensitive
         pwm_corr[0] = (pwm_value[0]-(rec_cal[0]-450))*(1000)/(900) + 1000;
@@ -683,14 +606,12 @@ void Receiver_filter(){
 
 void ESC_chill(){
 //pulse ESC to 1000 to stop annoying noise while checking other things
-
-  PCintPort::detachInterrupt(pins[i]);
   
   PORTB |= B00001100;        //turn on pins 10 and 11
   PORTD |= B00101000;        //turn on pins 3 and 5
   loop_timer = micros();     //start timer
 
-  timer_ESC1 = loop_timer + 1000;   //say at what time the channel needs to shut off
+  timer_ESC1 = loop_timer + value;   //say at what time the channel needs to shut off
   timer_ESC2 = loop_timer + 1000;
   timer_ESC3 = loop_timer + 1000;
   timer_ESC4 = loop_timer + 1000;
@@ -703,6 +624,5 @@ void ESC_chill(){
     if(timer_ESC4 <= esc_timer)PORTD &= B11011111;                //Set digital output 5 to low if the time is expired
   }
 
-   PCintPort::attachInterrupt(pins[i], &rising, RISING);
 }
 
