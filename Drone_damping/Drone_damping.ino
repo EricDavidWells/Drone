@@ -31,24 +31,31 @@ void loop() {
   Serial_read();
   IMU_values();
   ESC_chill();
+  Serial.println("bradley sucks ass");
 
   if (dataflag == 1){
-    for(int j=0; j<200; j++){
+    for(int j=0; j<(int)datapoints; j++){
       datacalx += accel_valx;
       datacaly += accel_valy;
       datacalz += accel_valz;
       IMU_values();
     }
-    datacalx /= 200;
-    datacaly /= 200;
-    datacalz /= 200;
+    datacalx /= datapoints;
+    datacaly /= datapoints;
+    datacalz /= datapoints;
     dataflag = 0;
     Serial.println("calibration done");
+    Serial.print("x axis: ");
+    Serial.println(datacalx,4);
+    Serial.print("y axis: ");
+    Serial.println(datacaly,4);
+    Serial.print("z axis: ");
+    Serial.println(datacalz,4);
   }
   if (datatestflag == 1){
     value = 1100;
     int m = 0;
-    for(int j=0; j<500; j++){ 
+    for(int j=0; j<(int)datapoints; j++){ 
       IMU_values();
       datax += abs((accel_valx - datacalx));
       datay += abs((accel_valy - datacaly));
@@ -58,19 +65,24 @@ void loop() {
       PORTB |= B00001100;        //turn on pins 10 and 11
       PORTD |= B00101000;        //turn on pins 3 and 5
       delayMicroseconds(1000);
-      PORTB &= B11111011;
-      PORTD &= B11010111;
-      delayMicroseconds(120);
       PORTB &= B11110011;
+      PORTD &= B11011111;
+      delayMicroseconds(200);
+      PORTB &= B11110011;      
+      PORTD &= B11010111;
+
       m = 0;
       }
   }
-  datax /= 500;
-  datay /= 500;
-  dataz /= 500;
+  datax /= datapoints;
+  datay /= datapoints;
+  dataz /= datapoints;
   datatestflag = 0;
+  Serial.print("x axis: ");
   Serial.println(datax,4);
+  Serial.print("y axis: ");
   Serial.println(datay,4);
+  Serial.print("z axis: ");
   Serial.println(dataz,4);
   datax = 0;
   datay = 0;
@@ -85,7 +97,7 @@ void Serial_read(){
     spacelocation = incomingByte.indexOf(' ');
     command = incomingByte.substring(0,spacelocation);
     value = incomingByte.substring(spacelocation+1).toFloat();
-    if ((value>2000 || value<1000)){
+    if ((value>2000 || value<1000) && command != "cal" && command != "test"){
       value = 1000;
     }
     if (command == "cal"){
@@ -194,7 +206,7 @@ void IMU_values(){
   accel_xH = Wire.read();
 
   accel_x = accel_xH * 256 + accel_xL;
-  accel_valx = accel_x * 2.000 / 32768.000;
+  accel_valx = accel_x * 8.000 / 32768.000;
   //Serial.print(accel_valx);
 
   //////////////////////////////////////////////////////////////////
@@ -217,7 +229,7 @@ void IMU_values(){
   accel_yH = Wire.read();
 
   accel_y = accel_yH * 256 + accel_yL;
-  accel_valy = accel_y * 2.000 / 32764.000;
+  accel_valy = accel_y * 8.000 / 32764.000;
 //  Serial.println(accel_valy);
 
   //////////////////////////////////////////////////////////////////
@@ -240,7 +252,7 @@ void IMU_values(){
   accel_zH = Wire.read();
 
   accel_z = accel_zH * 256 + accel_zL;
-  accel_valz = accel_z * 2.000 / 32764.000;
+  accel_valz = accel_z * 8.000 / 32764.000;
 
   //////////////////////////////////////////////////////////////////////
   //comp_x CALCULATION//////////////////////////////////////////////////
@@ -343,12 +355,12 @@ void IMU_setup(){
 
   Wire.beginTransmission(accel_add);
   Wire.write(accel_start_add);
-  Wire.write(151);                //turns accelerometer axis on and sets ODR
+  Wire.write(151);                //turns accelerometer axis on and sets ODR to fastest setting
   Wire.endTransmission();
 
   Wire.beginTransmission(accel_add);
   Wire.write(accel_start_add2);
-  Wire.write(0);                 //sets accelerometer range to +-2g
+  Wire.write(40);                 //32 = +-8g, 48 = +-16g, 0 = +- 2g, 
   Wire.endTransmission();
 
   Wire.beginTransmission(comp_add);
@@ -611,9 +623,9 @@ void ESC_chill(){
   PORTD |= B00101000;        //turn on pins 3 and 5
   loop_timer = micros();     //start timer
 
-  timer_ESC1 = loop_timer + value;   //say at what time the channel needs to shut off
+  timer_ESC1 = loop_timer + 1000;   //say at what time the channel needs to shut off
   timer_ESC2 = loop_timer + 1000;
-  timer_ESC3 = loop_timer + 1000;
+  timer_ESC3 = loop_timer + 1000; 
   timer_ESC4 = loop_timer + 1000;
 
   while((PORTB - 3) >= 4 || (PORTD-192) >= 8){
