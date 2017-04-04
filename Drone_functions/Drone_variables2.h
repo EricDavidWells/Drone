@@ -193,7 +193,7 @@ long timer_ESC4;
 
 int ch1 = 6;
 int ch2 = 7;
-int ch3 = 8;
+int ch3 = 8;  
 int ch4 = 9;
 int pins[] = {6,7,8,9};
 int pinlength = 4;
@@ -216,3 +216,5 @@ int pwm_corr[4];
 
 int resetcount = 0;
 long check;
+float gyro_cal[4] = {0,0,0,0};       //initiate gyro calibration variable
+

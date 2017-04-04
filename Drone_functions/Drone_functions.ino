@@ -4,6 +4,27 @@
 #include <PinChangeInt.h>
 #include "Drone_variables2.h"
 
+double PIDpitchout;
+double PIDpitchset=0;
+double PIDpitchkp=1;
+double PIDpitchki=0;
+double PIDpitchkd=0;
+PID PIDpitch(&pitch,&PIDpitchout,&PIDpitchset,PIDpitchkp,PIDpitchki,PIDpitchkd,DIRECT);
+
+double PIDrollout;
+double PIDrollset=0;
+PID PIDroll(&roll,&PIDrollout,&PIDrollset,PIDpitchkp,PIDpitchki,PIDpitchkd,DIRECT);
+
+double PIDyawout;
+double PIDyawset;
+double PIDyawkp=0.5;
+double PIDyawki=0;
+double PIDyawkd=0;
+double PIDgyro_valz;
+PID PIDyaw(&PIDgyro_valz,&PIDyawout,&PIDyawset,PIDyawkp,PIDyawki,PIDyawkd,DIRECT);
+
+int rec_pitchgain = 15;
+
 void setup() {
   Serial.begin(115200);
   Serial.setTimeout(2);
@@ -20,36 +41,63 @@ void setup() {
 
   PCintPort::attachInterrupt(ch1, &rising, RISING);
   Calibrate();
+
+  PIDpitch.SetOutputLimits(-100,100);
+  PIDpitch.SetMode(AUTOMATIC);
+  PIDpitch.SetSampleTime(20);
+  PIDroll.SetOutputLimits(-100,100);
+  PIDroll.SetMode(AUTOMATIC);
+  PIDroll.SetSampleTime(20);
+  PIDyaw.SetOutputLimits(-100,100);
+  PIDyaw.SetMode(AUTOMATIC);
+  PIDyaw.SetSampleTime(20);
 }
 
 void loop() {
   delay(10); 
   Serial_read();
   IMU_values();
-//  ESC_write();
-  ESC_chill();
+  ESC_write();
+//  ESC_chill();
 //  Receiver_filter();              //this is called within ESC_write function for speed
   Reset_detect();
-  
-//  Serial.print(" pitch:  ");
-//  Serial.print(pitch);
-//  Serial.print(" roll: ");
-//  Serial.print(roll);
-//  Serial.print(" time change: ");
-//  Serial.print(dtime, 8);
-//  Serial.print(" value: ");
-//  Serial.print(value);
-//  Serial.print(" ch1: ");
-//  Serial.print(pwm_corr[0]);
-//  Serial.print(" ch2: ");
-//  Serial.print(pwm_corr[1]);
-//  Serial.print(" ch3: ");
-//  Serial.print(pwm_corr[2]);
-//  Serial.print(" ch4: ");
-//  Serial.print(pwm_corr[3]);
-//  Serial.print('\t');
-//  Serial.println(accel_valx);
+  PID_calc();
 
+//  Serial.print(" accel_x:  ");
+//  Serial.print(accel_valx);
+//  Serial.print(" accel_y:  ");
+//  Serial.print(accel_valy);
+//  Serial.print(" accel_z:  ");
+//  Serial.print(accel_valz);
+  Serial.print(" value:  ");
+  Serial.print(value);
+  Serial.print(" pitch:  ");
+  Serial.print(pitch);
+  Serial.print(" roll: ");
+  Serial.print(roll);
+  Serial.print(" PIDroll ");
+  Serial.print(PIDrollout);
+  Serial.print(" PIDpitch: ");
+  Serial.print(PIDpitchout);
+  Serial.print(" ch1: ");
+  Serial.print(pwm_corr[0]);
+  Serial.print(" ch2: ");
+  Serial.print(pwm_corr[1]);
+  Serial.print(" ch3: ");
+  Serial.print(pwm_corr[2]);
+  Serial.print(" ch4: ");
+  Serial.print(pwm_corr[3]);
+  Serial.print('\t');
+  Serial.println();
+  
+}
+
+void PID_calc(){
+//  PIDpitchset = (pwm_value[1]-(rec_cal[1]-400.000))*(rec_pitchgain*2)/(800.000)-rec_pitchgain;
+//  PIDrollset = (pwm_value[0]-(rec_cal[0]-400.000))*(rec_pitchgain*2)/(800.000)-rec_pitchgain;
+
+  PIDroll.Compute();
+  PIDpitch.Compute();
 }
 
 void rising(){
@@ -92,15 +140,20 @@ void ESC_write(){
   PORTD |= B00101000;        //turn on pins 3 and 5
   loop_timer = micros();     //start timer
 
-//  timer_ESC1 = loop_timer + value;   //say at what time the channel needs to shut off
-//  timer_ESC2 = loop_timer + value;
-//  timer_ESC3 = loop_timer + value;
-//  timer_ESC4 = loop_timer + value;
+  timer_ESC1 = loop_timer + value;   //say at what time the channel needs to shut off
+  timer_ESC2 = loop_timer + value;
+  timer_ESC3 = loop_timer + value;
+  timer_ESC4 = loop_timer + value;
 
-  timer_ESC1 = loop_timer + pwm_corr[2];   //say at what time the channel needs to shut off
-  timer_ESC2 = loop_timer + pwm_corr[2];
-  timer_ESC3 = loop_timer + pwm_corr[2];
-  timer_ESC4 = loop_timer + pwm_corr[2];
+//  timer_ESC1 = loop_timer + value + PIDpitchout - PIDrollout;   //say at what time the channel needs to shut off
+//  timer_ESC2 = loop_timer + value + PIDpitchout + PIDrollout;
+//  timer_ESC3 = loop_timer + value - PIDpitchout - PIDrollout;
+//  timer_ESC4 = loop_timer + value - PIDpitchout + PIDrollout;
+
+//  timer_ESC1 = loop_timer + pwm_corr[2] + PIDpitchout - PIDrollout;   //say at what time the channel needs to shut off
+//  timer_ESC2 = loop_timer + pwm_corr[2] + PIDpitchout + PIDrollout;
+//  timer_ESC3 = loop_timer + pwm_corr[2] - PIDpitchout - PIDrollout;
+//  timer_ESC4 = loop_timer + pwm_corr[2] - PIDpitchout + PIDrollout;
 
   Receiver_filter();
 
@@ -108,13 +161,14 @@ void ESC_write(){
     esc_timer = micros();
 
     if(timer_ESC1 <= esc_timer){PORTB &= B11111011;}                //Set digital output 10 to low if the time is expired.
-    if(timer_ESC2 <= esc_timer)PORTD &= B11110111;                //Set digital output 11 to low if the time is expired.
-    if(timer_ESC3 <= esc_timer)PORTB &= B11110111;                //Set digital output 3 to low if the time is expired.
-    if(timer_ESC4 <= esc_timer)PORTD &= B11011111;                //Set digital output 5 to low if the time is expired
+    if(timer_ESC2 <= esc_timer){PORTD &= B11110111;}                //Set digital output 11 to low if the time is expired.
+    if(timer_ESC3 <= esc_timer){PORTB &= B11110111;}                //Set digital output 3 to low if the time is expired.
+    if(timer_ESC4 <= esc_timer){PORTD &= B11011111;}                //Set digital output 5 to low if the time is expired
 
-//    if((loop_timer + 1000) <= esc_timer)PORTD &= B11110111;               //for only writing to one motor 
-//    if((loop_timer + 1000) <= esc_timer)PORTB &= B11110111;                
-//    if((loop_timer + 1000) <= esc_timer)PORTD &= B11011111; 
+//    if((loop_timer + 1000) <= esc_timer){PORTB &= B11111011;}
+//    if((loop_timer + 1000) <= esc_timer){PORTD &= B11110111;}               //for only writing to one motor 
+//    if((loop_timer + 1000) <= esc_timer){PORTB &= B11110111;}              
+//    if((loop_timer + 1000) <= esc_timer){PORTD &= B11011111;} 
 
   }
 
@@ -156,7 +210,7 @@ void IMU_values(){
   gyro_xH = Wire.read();
 
   gyro_x = gyro_xH * 256 + gyro_xL;
-  gyro_valx = gyro_x * 2000.000 / 32764.000;
+  gyro_valx = gyro_x * 250.000 / 32764.000;
   //Serial.println(gyro_valx);
 
   //////////////////////////////////////////////////////////////////
@@ -179,7 +233,7 @@ void IMU_values(){
   gyro_yH = Wire.read();
 
   gyro_y = gyro_yH * 256 + gyro_yL;
-  gyro_valy = gyro_y * 2000.000 / 32764.000;
+  gyro_valy = gyro_y * 250.000 / 32764.000;
   //Serial.println(gyro_valy);
 
 
@@ -203,7 +257,7 @@ void IMU_values(){
   gyro_zH = Wire.read();
 
   gyro_z = gyro_zH * 256 + gyro_zL;
-  gyro_valz = gyro_z * 2000.000 / 32764.000;
+  gyro_valz = gyro_z * 250.000 / 32764.000;
   //Serial.println(gyro_valz);
 
   //////////////////////////////////////////////////////////////////////
@@ -354,8 +408,8 @@ void IMU_values(){
   Ax_gyro = Ax + gyro_valx*dtime*PI/180.000;
   Ay_gyro = Ay - gyro_valy*dtime*PI/180.000;
   
-  Ax = 0.980*Ax_gyro + 0.020*Ax_accel;
-  Ay = 0.980*Ay_gyro + 0.020*Ay_accel;
+  Ax = 0.990*Ax_gyro + 0.010*Ax_accel;
+  Ay = 0.990*Ay_gyro + 0.010*Ay_accel;
   
   roll = Ax*180.0000/PI;
   pitch = -Ay*180.0000/PI;
@@ -371,7 +425,7 @@ else{
   resetcount = 0;
 }
 
-if (resetcount >= 5){
+if (resetcount >= 3){
   IMU_setup();
 }
 }
@@ -385,7 +439,7 @@ void IMU_setup(){
 
   Wire.beginTransmission(gyro_add);
   Wire.write(gyro_start_add2);
-  Wire.write(32);                 //turns gyro range to 2000 dps
+  Wire.write(0);                 //32 sets gyro range to +-500dps; 0 sets gyro range to +-250dps; 
   Wire.endTransmission();
 
   Wire.beginTransmission(accel_add);
@@ -395,7 +449,7 @@ void IMU_setup(){
 
   Wire.beginTransmission(accel_add);
   Wire.write(accel_start_add2);
-  Wire.write(0);                 //sets accelerometer range to +-2g
+  Wire.write(0);                 //32 sets accelerometer range to +-8g; 8 sets to +-4g; 0 sets to +-2g;
   Wire.endTransmission();
 
   Wire.beginTransmission(comp_add);
@@ -646,26 +700,36 @@ void Calibrate(){
   long r = 0;                          //initiate random local variable to count
   long m = 0;                          //initiate random local variable to count modulo style to pulse ESC's every once in a while so they don't freak out while calibrating
   
+  
    while((cal_timer - cal_timerstart) < 3000000){   //record pwm values for 5 seconds
       for (int j = 0; j<4; j++){
         rec_cal[j] += pwm_value[j];
       }     
-    r += 1;         //increment how many values are recorded
-    m += 1;         //increment how many cycles since last update
-    cal_timer = micros();   //update timer
-   if (m % 1000 == 0){      //if weve done 1000 cycles pulse ESC
-      PORTB |= B00001100;        //turn on pins 10 and 11
-      PORTD |= B00101000;        //turn on pins 3 and 5
-      delayMicroseconds(1000);
-      PORTB &= B11110011;
-      PORTD &= B11010111;
-      m = 0;
-   } 
+      r += 1;         //increment how many values are recorded
+      m += 1;         //increment how many cycles since last update
+      cal_timer = micros();   //update timer
+      if (m % 1000 == 0){      //if weve done 1000 cycles pulse ESC
+        PORTB |= B00001100;        //turn on pins 10 and 11
+        PORTD |= B00101000;        //turn on pins 3 and 5
+        delayMicroseconds(1000);
+        PORTB &= B11110011;
+        PORTD &= B11010111;
+        m = 0;
+      } 
+
+      IMU_values();
+      gyro_cal[0] += gyro_valx;
+      gyro_cal[1] += gyro_valy;
+      gyro_cal[2] += gyro_valz;
    }
    
       for (int j = 0; j<4; j++){    //get average receiver value for each channel
-         rec_cal[j] /= r;
-    } 
+        rec_cal[j] /= r;
+      }
+
+      gyro_cal[0] /= r;
+      gyro_cal[1] /= r;
+      gyro_cal[2] /= r;
 }
 
 void Receiver_filter(){
@@ -694,6 +758,8 @@ void ESC_chill(){
   timer_ESC2 = loop_timer + 1000;
   timer_ESC3 = loop_timer + 1000;
   timer_ESC4 = loop_timer + 1000;
+
+  Receiver_filter();
 
   while((PORTB - 3) >= 4 || (PORTD-192) >= 8){
     esc_timer = micros();          //update timer
