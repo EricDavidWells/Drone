@@ -8,8 +8,38 @@ My attempt at an Arduino powered drone w/ own flight controller
 
 ###TODO:###
 
-* Get rid of some vibration, even without propellors the receiver is loose and vibrates audibly at full speed
 * Make gyro offset in calibration function
+* Change drone_functions to 8g acceleration range (even tho it didnt make any difference theoretically i think
+it should)
+* Glue mini back on
+
+###Feb 23, 2017###
+
+* Made PID loop, still not working.  Seems very shaky.  Similar to before...
+* Things to try: 
+ * Maybe receiver wire is getting interference from motors.  Try writing a flat value of like 1200 when receiver hits
+a certain number
+ * Re-solder ESC wires
+ * Fix one ground wire that is out of place
+ * Make better damping for IMU?
+ * Make sure IMU is being read properly, check LSB (make sure small values are going in the right direction).
+ * Build a one directional test setup to see if PID can be adjusted 
+
+###Feb 13, 2017:###
+
+* One of the ground wires fell out... don't know why.  Need to solder new head on
+* Checking pitch and roll values with propellors at various speeds
+
+
+###Feb 12, 2017:###
+
+* Balanced motors with duct tape, some were actually pretty bad ( around 0.04 z axis average) now all are below 0.02 z axis average
+* Balancing Props now
+* Accelerometer vibration seems really high, had range set to +- 2 g's, gonna change that to +- 16 g's to see if that
+reduces the vibration it sees. It didn't do anything....
+* The glue on the pro mini fell off... need to glue back on
+* With propellors i'm getting around 0.1g z axis average, seems really high but I guess we will see how the complimentary 
+filter does afterwards, did motors 3 and 1 still need to do 2 and 4
 
 ###Feb 10, 2017:###
 
